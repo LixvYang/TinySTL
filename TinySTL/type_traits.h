@@ -15,8 +15,11 @@ namespace tinystl
     static constexpr T value = v;
   };
 
-  typedef m_integral_constant<bool, true> m_true_type;
-  typedef m_integral_constant<bool, false> m_false_type;
+  template <bool b>
+  using m_bool_constant = m_integral_constant<bool, b>;
+
+  typedef m_bool_constant<true> m_true_type;
+  typedef m_bool_constant<false> m_false_type;
 
   /*****************************************************************************************/
   // type traits
