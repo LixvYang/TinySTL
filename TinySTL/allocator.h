@@ -72,7 +72,7 @@ namespace tinystl
   template<class T>
   void allocator<T>::construct(T* ptr)
   {
-
+    
   }
 
 }
