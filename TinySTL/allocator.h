@@ -1,9 +1,10 @@
 #ifndef TINYSTL_ALLOCATOR_H_
 #define TINYSTL_ALLOCATOR_H_
 
+#include "construct.h"
+#include "utils.h"
 #include <cstddef>
 #include <new>
-
 
 namespace tinystl
 {
@@ -55,24 +56,57 @@ namespace tinystl
     return static_cast<T *>(::operator new(n * sizeof(T)));
   }
 
-  template<class T>
-  void allocator<T>::deallocate(T* ptr)
+  template <class T>
+  void allocator<T>::deallocate(T *ptr)
   {
-    if (ptr == nullptr) return ;
+    if (ptr == nullptr)
+      return;
     ::operator delete(ptr);
   }
 
-  template<class T>
-  void allocator<T>::deallocate(T* ptr, size_type)
+  template <class T>
+  void allocator<T>::deallocate(T *ptr, size_type)
   {
-    if (ptr == nullptr) return;
+    if (ptr == nullptr)
+      return;
     ::operator delete(ptr);
   }
 
-  template<class T>
-  void allocator<T>::construct(T* ptr)
+  template <class T>
+  void allocator<T>::construct(T *ptr)
   {
-    
+    tinystl::construct(ptr);
+  }
+
+  template <class T>
+  void allocator<T>::construct(T *ptr, const T &value)
+  {
+    tinystl::construct(ptr, value);
+  }
+
+  template <class T>
+  void allocator<T>::construct(T *ptr, T &&value)
+  {
+    tinystl::construct(ptr, tinystl::move(value));
+  }
+
+  template <class T>
+  template <class... Args>
+  void allocator<T>::construct(T *ptr, Args &&...args)
+  {
+    tinystl::construct(ptr, tinystl::forward<Args>(args)...);
+  }
+
+  template <class T>
+  void allocator<T>::destroy(T *ptr)
+  {
+    tinystl::destroy(ptr);
+  }
+
+  template <class T>
+  void allocator<T>::destroy(T *first, T *last)
+  {
+    tinystl::destroy(first, last);
   }
 
 }
