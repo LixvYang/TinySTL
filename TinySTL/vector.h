@@ -356,8 +356,6 @@ namespace tinystl
     }
   }
 
-
-
   template <class T>
   void vector<T>::try_init() noexcept
   {
