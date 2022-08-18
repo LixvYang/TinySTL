@@ -3,6 +3,7 @@
 
 #include <initializer_list>
 #include <memory>
+#include "algobase.h"
 #include "allocator.h"
 #include "iterator.h"
 #include "memory.h"
@@ -277,7 +278,7 @@ namespace tinystl
 
     // reallocate
     template <class... Args>
-    void reallocate_emplacee(iterator pos, Args &&...args);
+    void reallocate_emplace(iterator pos, Args &&...args);
     void reallocate_insert(iterator pos, const value_type &value);
 
     // insert
@@ -511,7 +512,6 @@ namespace tinystl
   // helper function
 
   // try_init 函数，若分配失败则忽略，不抛出异常
-
   template <class T>
   void vector<T>::try_init() noexcept
   {
@@ -527,6 +527,356 @@ namespace tinystl
       end_ = nullptr;
       cap_ = nullptr;
     }
+  }
+
+  template <class T>
+  void vector<T>::init_space(size_type size, size_type cap)
+  {
+    try
+    {
+      begin_ = data_allocator::allocate(cap);
+      end_ = begin_ + size;
+      cap_ = begin_ + cap;
+    }
+    catch (...)
+    {
+      begin_ = nullptr;
+      end_ = nullptr;
+      cap = nullptr;
+      throw;
+    }
+  }
+
+  template <class T>
+  void vector<T>::fill_init(size_type n, const value_type &value)
+  {
+    const size_type init_size = tinystl::max(static_cast<size_type>(16), n);
+    init_space(n, init_size);
+    tinystl::uninitialized_fill_n(begin_, n, value);
+  }
+
+  // range_init 函数
+  template <class T>
+  template <class Iter>
+  void vector<T>::
+      range_init(Iter first, Iter last)
+  {
+    const size_type init_size = tinystl::max(static_cast<size_type>(last - first),
+                                             static_cast<size_type>(16));
+    init_space(static_cast<size_type>(last - first), init_size);
+    tinystl::uninitialized_copy(first, last, begin_);
+  }
+
+  // destroy_and_recover 函数
+  template <class T>
+  void vector<T>::
+      destroy_and_recover(iterator first, iterator last, size_type n)
+  {
+    data_allocator::destroy(first, last);
+    data_allocator::deallocate(first, n);
+  }
+
+  // get_new_cap 函数
+  template <class T>
+  typename vector<T>::size_type
+  vector<T>::
+      get_new_cap(size_type add_size)
+  {
+    const auto old_size = capacity();
+    THROW_LENGTH_ERROR_IF(old_size > max_size() - add_size,
+                          "vector<T>'s size too big");
+    if (old_size > max_size() - old_size / 2)
+    {
+      return old_size + add_size > max_size() - 16
+                 ? old_size + add_size
+                 : old_size + add_size + 16;
+    }
+    const size_type new_size = old_size == 0
+                                   ? tinystl::max(add_size, static_cast<size_type>(16))
+                                   : tinystl::max(old_size + old_size / 2, old_size + add_size);
+    return new_size;
+  }
+
+  // fill_assign 函数
+  template <class T>
+  void vector<T>::
+      fill_assign(size_type n, const value_type &value)
+  {
+    if (n > capacity())
+    {
+      vector tmp(n, value);
+      swap(tmp);
+    }
+    else if (n > size())
+    {
+      tinystl::fill(begin(), end(), value);
+      end_ = tinystl::uninitialized_fill_n(end_, n - size(), value);
+    }
+    else
+    {
+      erase(tinystl::fill_n(begin_, n, value), end_);
+    }
+  }
+
+  template <class T>
+  template <class IIter>
+  void vector<T>::copy_assign(IIter first, IIter last, input_iterator_tag)
+  {
+    auto cur = begin_;
+    for (; first != last && cur != end_; ++first, ++cur)
+    {
+      *cur = *first;
+    }
+    if (first == last)
+    {
+      erase(first, last);
+    }
+    else
+    {
+      insert(end_, first, last);
+    }
+  }
+
+  // 用 [first, last) 为容器赋值
+  template <class T>
+  template <class FIter>
+  void vector<T>::
+      copy_assign(FIter first, FIter last, forward_iterator_tag)
+  {
+    const size_type len = tinystl::distance(first, last);
+    if (len > capacity())
+    {
+      vector tmp(first, last);
+      swap(tmp);
+    }
+    else if (size() >= len)
+    {
+      auto new_end = tinystl::copy(first, last, begin_);
+      data_allocator::destroy(new_end, end_);
+      end_ = new_end;
+    }
+    else
+    {
+      auto mid = first;
+      tinystl::advance(mid, size());
+      tinystl::copy(first, mid, begin_);
+      auto new_end = tinystl::uninitialized_copy(mid, last, end_);
+      end_ = new_end;
+    }
+  }
+
+  // 重新分配空间并在 pos 处就地构造元素
+  template <class T>
+  template <class... Args>
+  void vector<T>::
+      reallocate_emplace(iterator pos, Args &&...args)
+  {
+    const auto new_size = get_new_cap(1);
+    auto new_begin = data_allocator::allocate(new_size);
+    auto new_end = new_begin;
+    try
+    {
+      new_end = tinystl::uninitialized_move(begin_, pos, new_begin);
+      data_allocator::construct(tinystl::address_of(*new_end), tinystl::forward<Args>(args)...);
+      ++new_end;
+      new_end = tinystl::uninitialized_move(pos, end_, new_end);
+    }
+    catch (...)
+    {
+      data_allocator::deallocate(new_begin, new_size);
+      throw;
+    }
+    destroy_and_recover(begin_, end_, cap_ - begin_);
+    begin_ = new_begin;
+    end_ = new_end;
+    cap_ = new_begin + new_size;
+  }
+
+  // 重新分配空间并在 pos 处插入元素
+  template <class T>
+  void vector<T>::reallocate_insert(iterator pos, const value_type &value)
+  {
+    const auto new_size = get_new_cap(1);
+    auto new_begin = data_allocator::allocate(new_size);
+    auto new_end = new_begin;
+    const value_type &value_copy = value;
+    try
+    {
+      new_end = tinystl::uninitialized_move(begin_, pos, new_begin);
+      data_allocator::construct(tinystl::address_of(*new_end), value_copy);
+      ++new_end;
+      new_end = tinystl::uninitialized_move(pos, end_, new_end);
+    }
+    catch (...)
+    {
+      data_allocator::deallocate(new_begin, new_size);
+      throw;
+    }
+    destroy_and_recover(begin_, end_, cap_ - begin_);
+    begin_ = new_begin;
+    end_ = new_end;
+    cap_ = new_begin + new_size;
+  }
+
+  // fill_insert 函数
+  template <class T>
+  typename vector<T>::iterator
+  vector<T>::
+      fill_insert(iterator pos, size_type n, const value_type &value)
+  {
+    if (n == 0)
+      return pos;
+    const size_type xpos = pos - begin_;
+    const value_type value_copy = value; // 避免被覆盖
+    if (static_cast<size_type>(cap_ - end_) >= n)
+    { // 如果备用空间大于等于增加的空间
+      const size_type after_elems = end_ - pos;
+      auto old_end = end_;
+      if (after_elems > n)
+      {
+        tinystl::uninitialized_copy(end_ - n, end_, end_);
+        end_ += n;
+        tinystl::move_backward(pos, old_end - n, old_end);
+        tinystl::uninitialized_fill_n(pos, n, value_copy);
+      }
+      else
+      {
+        end_ = tinystl::uninitialized_fill_n(end_, n - after_elems, value_copy);
+        end_ = tinystl::uninitialized_move(pos, old_end, end_);
+        tinystl::uninitialized_fill_n(pos, after_elems, value_copy);
+      }
+    }
+    else
+    { // 如果备用空间不足
+      const auto new_size = get_new_cap(n);
+      auto new_begin = data_allocator::allocate(new_size);
+      auto new_end = new_begin;
+      try
+      {
+        new_end = tinystl::uninitialized_move(begin_, pos, new_begin);
+        new_end = tinystl::uninitialized_fill_n(new_end, n, value);
+        new_end = tinystl::uninitialized_move(pos, end_, new_end);
+      }
+      catch (...)
+      {
+        destroy_and_recover(new_begin, new_end, new_size);
+        throw;
+      }
+      data_allocator::deallocate(begin_, cap_ - begin_);
+      begin_ = new_begin;
+      end_ = new_end;
+      cap_ = begin_ + new_size;
+    }
+    return begin_ + xpos;
+  }
+
+  // copy_insert 函数
+  template <class T>
+  template <class IIter>
+  void vector<T>::
+      copy_insert(iterator pos, IIter first, IIter last)
+  {
+    if (first == last)
+      return;
+    const auto n = tinystl::distance(first, last);
+    if ((cap_ - end_) >= n)
+    { // 如果备用空间大小足够
+      const auto after_elems = end_ - pos;
+      auto old_end = end_;
+      if (after_elems > n)
+      {
+        end_ = tinystl::uninitialized_copy(end_ - n, end_, end_);
+        tinystl::move_backward(pos, old_end - n, old_end);
+        tinystl::uninitialized_copy(first, last, pos);
+      }
+      else
+      {
+        auto mid = first;
+        tinystl::advance(mid, after_elems);
+        end_ = tinystl::uninitialized_copy(mid, last, end_);
+        end_ = tinystl::uninitialized_move(pos, old_end, end_);
+        tinystl::uninitialized_copy(first, mid, pos);
+      }
+    }
+    else
+    { // 备用空间不足
+      const auto new_size = get_new_cap(n);
+      auto new_begin = data_allocator::allocate(new_size);
+      auto new_end = new_begin;
+      try
+      {
+        new_end = tinystl::uninitialized_move(begin_, pos, new_begin);
+        new_end = tinystl::uninitialized_copy(first, last, new_end);
+        new_end = tinystl::uninitialized_move(pos, end_, new_end);
+      }
+      catch (...)
+      {
+        destroy_and_recover(new_begin, new_end, new_size);
+        throw;
+      }
+      data_allocator::deallocate(begin_, cap_ - begin_);
+      begin_ = new_begin;
+      end_ = new_end;
+      cap_ = begin_ + new_size;
+    }
+  }
+
+  // reinsert 函数
+  template <class T>
+  void vector<T>::reinsert(size_type size)
+  {
+    auto new_begin = data_allocator::allocate(size);
+    try
+    {
+      tinystl::uninitialized_move(begin_, end_, new_begin);
+    }
+    catch (...)
+    {
+      data_allocator::deallocate(new_begin, size);
+      throw;
+    }
+    data_allocator::deallocate(begin_, cap_ - begin_);
+    begin_ = new_begin;
+    end_ = begin_ + size;
+    cap_ = begin_ + size;
+  }
+
+  /*****************************************************************************************/
+  // 重载比较操作符
+  template <class T>
+  bool operator==(const vector<T> &lhs, const vector<T> &rhs)
+  {
+    return lhs.size() == rhs.size() && tinystl::equal((lhs.begin(), lhs.end(), rhs.begin()));
+  }
+
+  template <class T>
+  bool operator<(const vector<T> &lhs, const vector<T> &rhs)
+  {
+    return tinystl::lexicographical_compare(lhs.begin(), lhs.end(), rhs.begin(), lhs.end());
+  }
+
+  template <class T>
+  bool operator!=(const vector<T> &lhs, const vector<T> &rhs)
+  {
+    return !(lhs == rhs);
+  }
+
+  template <class T>
+  bool operator>(const vector<T> &lhs, const vector<T> &rhs)
+  {
+    return rhs < lhs;
+  }
+
+  template <class T>
+  bool operator<=(const vector<T> &lhs, const vector<T> &rhs)
+  {
+    return !(rhs < lhs);
+  }
+
+  template <class T>
+  bool operator>=(const vector<T> &lhs, const vector<T> &rhs)
+  {
+    return !(lhs < rhs);
   }
 
   template <class T>
