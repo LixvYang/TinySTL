@@ -4,6 +4,7 @@
 #include <new>
 #include "type_traits.h"
 #include "iterator.h"
+#include "utils.h"
 
 namespace tinystl
 {
@@ -52,7 +53,7 @@ namespace tinystl
   template <class Ty>
   void destroy(Ty *pointer)
   {
-    destroy_one(pointer, std::is_trivially_destructible<Ty>{});
+    (pointer, std::is_trivially_destructible<Ty>{});
   }
 
   template <class ForwardIter>
