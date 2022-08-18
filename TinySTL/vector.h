@@ -2,8 +2,10 @@
 #define TINYSTL_VECTOR_H_
 
 #include <initializer_list>
+#include <memory>
 #include "allocator.h"
 #include "iterator.h"
+#include "memory.h"
 #include "utils.h"
 #include "exceptdef.h"
 
@@ -356,12 +358,164 @@ namespace tinystl
     }
   }
 
+  // 在 pos 位置就地构造元素，避免额外的复制或移动开销
+  template <class T>
+  template <class... Args>
+  typename vector<T>::iterator
+  vector<T>::emplace(const_iterator pos, Args &&...args)
+  {
+    MYSTL_DEBUG(pos >= begin() && pos <= end());
+    iterator xpos = const_cast<iterator>(pos);
+    const size_type n = xpos - begin_;
+    if (end_ != cap_ && xpos == end_)
+    {
+      data_allocator::construct(tinystl::address_of(*end_), tinystl::forward<Args>(args)...);
+      ++end_;
+    }
+    else if (end_ != cap_)
+    {
+      auto new_end = end_;
+      data_allocator::construct(tinystl::address_of(*end_), *(end_ - 1));
+      ++new_end;
+      tinystl::copy_backward(xpos, end_ - 1, end_);
+      *xpos = value_type(tinystl::forward<Args>(args)...);
+    }
+    else
+    {
+      reallocate_emplace(xpos, tinystl::forward<Args>(args)...);
+    }
+    return begin() + n;
+  }
 
+  // 在尾部就地构造元素，避免额外的复制或移动开销
+  template <class T>
+  template <class... Args>
+  void vector<T>::emplace_back(Args &&...args)
+  {
+    if (end_ < cap_)
+    {
+      data_allocator::construct(tinystl::address_of(*end_), tinystl::forward<Args>(args)...);
+      ++end_;
+    }
+    else
+    {
+      reallocate_emplace(end_, tinystl::forward<Args>(args)...);
+    }
+  }
+
+  template <class T>
+  void vector<T>::push_back(const value_type &value)
+  {
+    if (end_ != cap_)
+    {
+      data_allocator::construct(tinystl::address_of(*end_), value);
+      ++end_;
+    }
+    else
+    {
+      reallocate_insert(end_, value);
+    }
+  }
+
+  // 弹出尾部元素
+  template <class T>
+  void vector<T>::pop_back()
+  {
+    MYSTL_DEBUG(!empty());
+    data_allocator::destroy(end_ - 1);
+    --end_;
+  }
+  // 在 pos 处插入元素
+  template <class T>
+  typename vector<T>::iterator
+  vector<T>::insert(const_iterator pos, const value_type &value)
+  {
+    MYSTL_DEBUG(pos >= begin() && pos <= end());
+    iterator xpos = const_cast<iterator>(pos);
+    const size_type n = pos - begin_;
+    if (end_ != cap_ && xpos == end_)
+    {
+      data_allocator::construct(tinystl::address_of(*end_), value);
+      ++end_;
+    }
+    else if (end_ != cap_)
+    {
+      auto new_end = end_;
+      data_allocator::construct(tinystl::address_of(*end_), *(end_ - 1));
+      ++new_end;
+      auto value_copy = value; // 避免元素因以下复制操作而被改变
+      tinystl::copy_backward(xpos, end_ - 1, end_);
+      *xpos = tinystl::move(value_copy);
+      end_ = new_end;
+    }
+    else
+    {
+      reallocate_insert(xpos, value);
+    }
+    return begin_ + n;
+  }
+
+  // 删除 pos 位置上的元素
+  template <class T>
+  typename vector<T>::iterator
+  vector<T>::erase(const_iterator pos)
+  {
+    MYSTL_DEBUG(pos >= begin() && pos < end());
+    iterator xpos = begin_ + (pos - begin());
+    tinystl::move(xpos + 1, end_, xpos);
+    data_allocator::destroy(end_ - 1);
+    --end_;
+    return xpos;
+  }
+
+  // 删除[first, last)上的元素
+  template <class T>
+  typename vector<T>::iterator
+  vector<T>::erase(const_iterator first, const_iterator last)
+  {
+    MYSTL_DEBUG(first >= begin() && last <= end() && !(last < first));
+    const auto n = first - begin();
+    iterator r = begin_ + (first - begin());
+    data_allocator::destroy(tinystl::move(r + (last - first), end_, r), end_);
+    end_ = end_ - (last - first);
+    return begin_ + n;
+  }
+
+  // 重置容器大小
+  template <class T>
+  void vector<T>::resize(size_type new_size, const value_type &value)
+  {
+    if (new_size < size())
+    {
+      erase(begin() + new_size, end());
+    }
+    else
+    {
+      insert(end(), new_size - size(), value);
+    }
+  }
+
+  // 与另一个 vector 交换
+  template <class T>
+  void vector<T>::swap(vector<T> &rhs) noexcept
+  {
+    if (this != &rhs)
+    {
+      swap(begin_, rhs.begin_);
+      swap(end_, rhs.end_);
+      swap(cap_, rhs.cap_);
+    }
+  }
+
+  /*****************************************************************************************/
+  // helper function
+
+  // try_init 函数，若分配失败则忽略，不抛出异常
 
   template <class T>
   void vector<T>::try_init() noexcept
   {
-    try`
+    try
     {
       begin_ = data_allocator::allocate(16);
       end_ = begin_;
@@ -373,6 +527,12 @@ namespace tinystl
       end_ = nullptr;
       cap_ = nullptr;
     }
+  }
+
+  template <class T>
+  void swap(vector<T> &lhs, vector<T> &rhs)
+  {
+    lhs.swap(rhs);
   }
 
 } // namespace tinystal
