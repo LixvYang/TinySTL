@@ -306,14 +306,14 @@ namespace tinystl
     }
     else if (size() >= len)
     {
-      auto i = tinystl::copy(rhs.begin(), rhs.end(), begin());
+      auto i = std::copy(rhs.begin(), rhs.end(), begin());
       data_allocator::destroy(i, end_);
       end_ = begin_ + len;
     }
     else
     {
-      tinystl::copy(rhs.begin(), rhs.begin() + size(), begin_);
-      tinystl::uninitialized_copy(rhs.begin() + size(), rhs.end(), end_);
+      std::copy(rhs.begin(), rhs.begin() + size(), begin_);
+      std::uninitialized_copy(rhs.begin() + size(), rhs.end(), end_);
       cap_ = end_ = begin_ + len;
     }
   }
@@ -341,7 +341,7 @@ namespace tinystl
                             "n can not larger than max_size() in vector<T>::reserve(n)");
       const auto old_size = size();
       auto tmp = data_allocator::allocate(n);
-      tinystl::uninitialized_move(begin_, end_, tmp);
+      uninitialized_move(begin_, end_, tmp);
       data_allocator::deallocate(begin_, cap_ - begin_);
       begin_ = tmp;
       end_ = tmp + old_size;
@@ -378,7 +378,7 @@ namespace tinystl
       auto new_end = end_;
       data_allocator::construct(tinystl::address_of(*end_), *(end_ - 1));
       ++new_end;
-      tinystl::copy_backward(xpos, end_ - 1, end_);
+      copy_backward(xpos, end_ - 1, end_);
       *xpos = value_type(tinystl::forward<Args>(args)...);
     }
     else
@@ -445,7 +445,7 @@ namespace tinystl
       data_allocator::construct(tinystl::address_of(*end_), *(end_ - 1));
       ++new_end;
       auto value_copy = value; // 避免元素因以下复制操作而被改变
-      tinystl::copy_backward(xpos, end_ - 1, end_);
+      copy_backward(xpos, end_ - 1, end_);
       *xpos = tinystl::move(value_copy);
       end_ = new_end;
     }
@@ -552,7 +552,7 @@ namespace tinystl
   {
     const size_type init_size = tinystl::max(static_cast<size_type>(16), n);
     init_space(n, init_size);
-    tinystl::uninitialized_fill_n(begin_, n, value);
+    uninitialized_fill_n(begin_, n, value);
   }
 
   // range_init 函数
@@ -564,7 +564,7 @@ namespace tinystl
     const size_type init_size = tinystl::max(static_cast<size_type>(last - first),
                                              static_cast<size_type>(16));
     init_space(static_cast<size_type>(last - first), init_size);
-    tinystl::uninitialized_copy(first, last, begin_);
+    uninitialized_copy(first, last, begin_);
   }
 
   // destroy_and_recover 函数
@@ -609,12 +609,12 @@ namespace tinystl
     }
     else if (n > size())
     {
-      tinystl::fill(begin(), end(), value);
-      end_ = tinystl::uninitialized_fill_n(end_, n - size(), value);
+      fill(begin(), end(), value);
+      end_ = uninitialized_fill_n(end_, n - size(), value);
     }
     else
     {
-      erase(tinystl::fill_n(begin_, n, value), end_);
+      erase(fill_n(begin_, n, value), end_);
     }
   }
 
@@ -651,7 +651,7 @@ namespace tinystl
     }
     else if (size() >= len)
     {
-      auto new_end = tinystl::copy(first, last, begin_);
+      auto new_end = copy(first, last, begin_);
       data_allocator::destroy(new_end, end_);
       end_ = new_end;
     }
@@ -659,8 +659,8 @@ namespace tinystl
     {
       auto mid = first;
       tinystl::advance(mid, size());
-      tinystl::copy(first, mid, begin_);
-      auto new_end = tinystl::uninitialized_copy(mid, last, end_);
+      copy(first, mid, begin_);
+      auto new_end = uninitialized_copy(mid, last, end_);
       end_ = new_end;
     }
   }
@@ -676,10 +676,10 @@ namespace tinystl
     auto new_end = new_begin;
     try
     {
-      new_end = tinystl::uninitialized_move(begin_, pos, new_begin);
+      new_end = uninitialized_move(begin_, pos, new_begin);
       data_allocator::construct(tinystl::address_of(*new_end), tinystl::forward<Args>(args)...);
       ++new_end;
-      new_end = tinystl::uninitialized_move(pos, end_, new_end);
+      new_end = uninitialized_move(pos, end_, new_end);
     }
     catch (...)
     {
@@ -702,10 +702,10 @@ namespace tinystl
     const value_type &value_copy = value;
     try
     {
-      new_end = tinystl::uninitialized_move(begin_, pos, new_begin);
+      new_end = uninitialized_move(begin_, pos, new_begin);
       data_allocator::construct(tinystl::address_of(*new_end), value_copy);
       ++new_end;
-      new_end = tinystl::uninitialized_move(pos, end_, new_end);
+      new_end = uninitialized_move(pos, end_, new_end);
     }
     catch (...)
     {
@@ -734,16 +734,16 @@ namespace tinystl
       auto old_end = end_;
       if (after_elems > n)
       {
-        tinystl::uninitialized_copy(end_ - n, end_, end_);
+        uninitialized_copy(end_ - n, end_, end_);
         end_ += n;
-        tinystl::move_backward(pos, old_end - n, old_end);
-        tinystl::uninitialized_fill_n(pos, n, value_copy);
+        move_backward(pos, old_end - n, old_end);
+        uninitialized_fill_n(pos, n, value_copy);
       }
       else
       {
-        end_ = tinystl::uninitialized_fill_n(end_, n - after_elems, value_copy);
-        end_ = tinystl::uninitialized_move(pos, old_end, end_);
-        tinystl::uninitialized_fill_n(pos, after_elems, value_copy);
+        end_ = uninitialized_fill_n(end_, n - after_elems, value_copy);
+        end_ = uninitialized_move(pos, old_end, end_);
+        uninitialized_fill_n(pos, after_elems, value_copy);
       }
     }
     else
@@ -753,9 +753,9 @@ namespace tinystl
       auto new_end = new_begin;
       try
       {
-        new_end = tinystl::uninitialized_move(begin_, pos, new_begin);
-        new_end = tinystl::uninitialized_fill_n(new_end, n, value);
-        new_end = tinystl::uninitialized_move(pos, end_, new_end);
+        new_end = uninitialized_move(begin_, pos, new_begin);
+        new_end = uninitialized_fill_n(new_end, n, value);
+        new_end = uninitialized_move(pos, end_, new_end);
       }
       catch (...)
       {
@@ -785,17 +785,17 @@ namespace tinystl
       auto old_end = end_;
       if (after_elems > n)
       {
-        end_ = tinystl::uninitialized_copy(end_ - n, end_, end_);
-        tinystl::move_backward(pos, old_end - n, old_end);
-        tinystl::uninitialized_copy(first, last, pos);
+        end_ = uninitialized_copy(end_ - n, end_, end_);
+        move_backward(pos, old_end - n, old_end);
+        uninitialized_copy(first, last, pos);
       }
       else
       {
         auto mid = first;
         tinystl::advance(mid, after_elems);
-        end_ = tinystl::uninitialized_copy(mid, last, end_);
-        end_ = tinystl::uninitialized_move(pos, old_end, end_);
-        tinystl::uninitialized_copy(first, mid, pos);
+        end_ = uninitialized_copy(mid, last, end_);
+        end_ = uninitialized_move(pos, old_end, end_);
+        uninitialized_copy(first, mid, pos);
       }
     }
     else
@@ -805,9 +805,9 @@ namespace tinystl
       auto new_end = new_begin;
       try
       {
-        new_end = tinystl::uninitialized_move(begin_, pos, new_begin);
-        new_end = tinystl::uninitialized_copy(first, last, new_end);
-        new_end = tinystl::uninitialized_move(pos, end_, new_end);
+        new_end = uninitialized_move(begin_, pos, new_begin);
+        new_end = uninitialized_copy(first, last, new_end);
+        new_end = uninitialized_move(pos, end_, new_end);
       }
       catch (...)
       {
@@ -828,7 +828,7 @@ namespace tinystl
     auto new_begin = data_allocator::allocate(size);
     try
     {
-      tinystl::uninitialized_move(begin_, end_, new_begin);
+      uninitialized_move(begin_, end_, new_begin);
     }
     catch (...)
     {
@@ -846,13 +846,13 @@ namespace tinystl
   template <class T>
   bool operator==(const vector<T> &lhs, const vector<T> &rhs)
   {
-    return lhs.size() == rhs.size() && tinystl::equal((lhs.begin(), lhs.end(), rhs.begin()));
+    return lhs.size() == rhs.size() && equal((lhs.begin(), lhs.end(), rhs.begin()));
   }
 
   template <class T>
   bool operator<(const vector<T> &lhs, const vector<T> &rhs)
   {
-    return tinystl::lexicographical_compare(lhs.begin(), lhs.end(), rhs.begin(), lhs.end());
+    return lexicographical_compare(lhs.begin(), lhs.end(), rhs.begin(), lhs.end());
   }
 
   template <class T>
