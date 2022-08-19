@@ -9,6 +9,7 @@
 #include "memory.h"
 #include "utils.h"
 #include "exceptdef.h"
+using namespace std;
 
 namespace tinystl
 {
