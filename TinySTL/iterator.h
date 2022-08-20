@@ -184,7 +184,7 @@ namespace tinystl
   // 以下函数用于计算迭代器间的距离
   template <class InputIterator>
   typename iterator_traits<InputIterator>::difference_type
-  distance_dispath(InputIterator first, InputIterator last, input_iterator_tag)
+  distance_dispatch(InputIterator first, InputIterator last, input_iterator_tag)
   {
     typename iterator_traits<InputIterator>::difference_type n = 0;
     while (first != last)
@@ -202,7 +202,6 @@ namespace tinystl
   {
     return last - first;
   }
-
   template <class InputIterator>
   typename iterator_traits<InputIterator>::difference_type
   distance(InputIterator first, InputIterator last)

@@ -4,6 +4,7 @@
 #include <new>
 #include "type_traits.h"
 #include "iterator.h"
+#include "utils.h"
 
 namespace tinystl
 {

@@ -18,6 +18,5 @@ int main()
     l1.push_back(i);
   }
   printList(l1);
-
   return 0;
 }
