@@ -68,7 +68,7 @@ namespace tinystl
                               tinystl::is_input_iterator<Iter>::value, int>::type = 0>
     vector(Iter first, Iter last)
     {
-      MYSTL_DEBUG(!(last < first));
+      TINYSTL_DEBUG(!(last < first));
       range_init(first, last);
     }
     vector(const vector &rhs)
@@ -138,12 +138,12 @@ namespace tinystl
     // [] operator
     reference operator[](size_type n)
     {
-      MYSTL_DEBUG(n < size());
+      TINYSTL_DEBUG(n < size());
       return *(begin_ + n);
     }
     const_reference operator[](size_type n) const
     {
-      MYSTL_DEBUG(n < size());
+      TINYSTL_DEBUG(n < size());
       return *(begin_ + n);
     }
     reference at(size_type n)
@@ -159,22 +159,22 @@ namespace tinystl
 
     reference front()
     {
-      MYSTL_DEBUG(!empty());
+      TINYSTL_DEBUG(!empty());
       return *begin_;
     }
     const_reference front() const
     {
-      MYSTL_DEBUG(!empty());
+      TINYSTL_DEBUG(!empty());
       return *begin_;
     }
     reference back()
     {
-      MYSTL_DEBUG(!empty());
+      TINYSTL_DEBUG(!empty());
       return *(end_ - 1);
     }
     const_reference back() const
     {
-      MYSTL_DEBUG(!empty());
+      TINYSTL_DEBUG(!empty());
       return *(end_ - 1);
     }
 
@@ -191,7 +191,7 @@ namespace tinystl
     template <class Iter, typename std::enable_if<tinystl::is_input_iterator<Iter>::value, int>::type = 0>
     void assign(Iter first, Iter last)
     {
-      MYSTL_DEBUG(!(last < first));
+      TINYSTL_DEBUG(!(last < first));
       copy_assign(first, last, iterator_category(first));
     }
     void assign(std::initializer_list<value_type> il)
@@ -225,7 +225,7 @@ namespace tinystl
     }
     iterator insert(const_iterator pos, size_type n, const value_type &value)
     {
-      MYSTL_DEBUG(pos >= begin() && pos <= end());
+      TINYSTL_DEBUG(pos >= begin() && pos <= end());
       return fill_insert(const_cast<iterator>(pos), n, value);
     }
 
@@ -233,7 +233,7 @@ namespace tinystl
                               tinystl::is_input_iterator<Iter>::value, int>::type = 0>
     void insert(const_iterator pos, Iter first, Iter last)
     {
-      MYSTL_DEBUG(pos >= begin() && pos <= end() && !(last < first));
+      TINYSTL_DEBUG(pos >= begin() && pos <= end() && !(last < first));
       copy_insert(const_cast<iterator>(pos), first, last);
     }
 
@@ -366,7 +366,7 @@ namespace tinystl
   typename vector<T>::iterator
   vector<T>::emplace(const_iterator pos, Args &&...args)
   {
-    MYSTL_DEBUG(pos >= begin() && pos <= end());
+    TINYSTL_DEBUG(pos >= begin() && pos <= end());
     iterator xpos = const_cast<iterator>(pos);
     const size_type n = xpos - begin_;
     if (end_ != cap_ && xpos == end_)
@@ -423,7 +423,7 @@ namespace tinystl
   template <class T>
   void vector<T>::pop_back()
   {
-    MYSTL_DEBUG(!empty());
+    TINYSTL_DEBUG(!empty());
     data_allocator::destroy(end_ - 1);
     --end_;
   }
@@ -432,7 +432,7 @@ namespace tinystl
   typename vector<T>::iterator
   vector<T>::insert(const_iterator pos, const value_type &value)
   {
-    MYSTL_DEBUG(pos >= begin() && pos <= end());
+    TINYSTL_DEBUG(pos >= begin() && pos <= end());
     iterator xpos = const_cast<iterator>(pos);
     const size_type n = pos - begin_;
     if (end_ != cap_ && xpos == end_)
@@ -462,7 +462,7 @@ namespace tinystl
   typename vector<T>::iterator
   vector<T>::erase(const_iterator pos)
   {
-    MYSTL_DEBUG(pos >= begin() && pos < end());
+    TINYSTL_DEBUG(pos >= begin() && pos < end());
     iterator xpos = begin_ + (pos - begin());
     tinystl::move(xpos + 1, end_, xpos);
     data_allocator::destroy(end_ - 1);
@@ -475,7 +475,7 @@ namespace tinystl
   typename vector<T>::iterator
   vector<T>::erase(const_iterator first, const_iterator last)
   {
-    MYSTL_DEBUG(first >= begin() && last <= end() && !(last < first));
+    TINYSTL_DEBUG(first >= begin() && last <= end() && !(last < first));
     const auto n = first - begin();
     iterator r = begin_ + (first - begin());
     data_allocator::destroy(tinystl::move(r + (last - first), end_, r), end_);
