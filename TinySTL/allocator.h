@@ -65,7 +65,7 @@ namespace tinystl
   }
 
   template <class T>
-  void allocator<T>::deallocate(T *ptr, size_type)
+  void allocator<T>::deallocate(T *ptr, size_type /*size*/)
   {
     if (ptr == nullptr)
       return;

@@ -28,6 +28,30 @@ namespace tinystl
     return static_cast<T &&>(arg);
   }
 
+  // swap
+
+  template <class Tp>
+  void swap(Tp &lhs, Tp &rhs)
+  {
+    auto tmp(tinystl::move(lhs));
+    lhs = tinystl::move(rhs);
+    rhs = tinystl::move(tmp);
+  }
+
+  template <class ForwardIter1, class ForwardIter2>
+  ForwardIter2 swap_range(ForwardIter1 first1, ForwardIter1 last1, ForwardIter2 first2)
+  {
+    for (; first1 != last1; ++first1, (void)++first2)
+      tinystl::swap(*first1, *first2);
+    return first2;
+  }
+
+  template <class Tp, size_t N>
+  void swap(Tp (&a)[N], Tp (&b)[N])
+  {
+    tinystl::swap_range(a, a + N, b);
+  }
+
 } // namespace tinystl
 
 #endif // !TINYSTL_UTILS_H_
