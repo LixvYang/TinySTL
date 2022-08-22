@@ -1,4 +1,4 @@
-#ifndef TINYSTL_MEMORY_H
+#ifndef TINYSTL_MEMORY_H_
 #define TINYSTL_MEMORY_H_
 
 namespace tinystl
