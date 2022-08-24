@@ -129,7 +129,7 @@ namespace tinystl
     return !(lhs < rhs);
   }
 
-  // 重载 mystl 的 swap
+  // 重载 tinystl 的 swap
   template <class T, class Container>
   void swap(stack<T, Container> &lhs, stack<T, Container> &rhs) noexcept(noexcept(lhs.swap(rhs)))
   {
