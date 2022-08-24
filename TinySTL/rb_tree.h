@@ -1551,7 +1551,7 @@ namespace tinystl
       x->right = base_node;
       if (rightmost() == x)
         rightmost() = base_node;
-    }
+    } 
     rb_tree_insert_rebalance(base_node, root());
     ++node_count_;
     return iterator(node);
