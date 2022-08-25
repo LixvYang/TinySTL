@@ -8,9 +8,9 @@
 
 namespace tinystl
 {
-  // 模板类 ： allocator
+  // 模板类：allocator
   // 模板函数代表数据类型
-  template <typename T>
+  template <class T>
   class allocator
   {
   public:
@@ -50,9 +50,7 @@ namespace tinystl
   T *allocator<T>::allocate(size_type n)
   {
     if (n == 0)
-    {
       return nullptr;
-    }
     return static_cast<T *>(::operator new(n * sizeof(T)));
   }
 

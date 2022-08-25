@@ -12,12 +12,16 @@
 
 namespace tinystl
 {
+
   // rb tree 节点颜色的类型
+
   typedef bool rb_tree_color_type;
+
   static constexpr rb_tree_color_type rb_tree_red = false;
   static constexpr rb_tree_color_type rb_tree_black = true;
 
   // forward declaration
+
   template <class T>
   struct rb_tree_node_base;
   template <class T>
@@ -29,6 +33,7 @@ namespace tinystl
   struct rb_tree_const_iterator;
 
   // rb tree value traits
+
   template <class T, bool>
   struct rb_tree_value_traits_imp
   {
@@ -41,6 +46,7 @@ namespace tinystl
     {
       return value;
     }
+
     template <class Ty>
     static const value_type &get_value(const Ty &value)
     {
@@ -72,7 +78,9 @@ namespace tinystl
   struct rb_tree_value_traits
   {
     static constexpr bool is_map = tinystl::is_pair<T>::value;
+
     typedef rb_tree_value_traits_imp<T, is_map> value_traits_type;
+
     typedef typename value_traits_type::key_type key_type;
     typedef typename value_traits_type::mapped_type mapped_type;
     typedef typename value_traits_type::value_type value_type;
@@ -84,17 +92,19 @@ namespace tinystl
     }
 
     template <class Ty>
-    static const key_type &get_value(const Ty &value)
+    static const value_type &get_value(const Ty &value)
     {
       return value_traits_type::get_value(value);
     }
   };
 
   // rb tree node traits
+
   template <class T>
   struct rb_tree_node_traits
   {
     typedef rb_tree_color_type color_type;
+
     typedef rb_tree_value_traits<T> value_traits;
     typedef typename value_traits::key_type key_type;
     typedef typename value_traits::mapped_type mapped_type;
@@ -105,6 +115,7 @@ namespace tinystl
   };
 
   // rb tree 的节点设计
+
   template <class T>
   struct rb_tree_node_base
   {
@@ -112,10 +123,10 @@ namespace tinystl
     typedef rb_tree_node_base<T> *base_ptr;
     typedef rb_tree_node<T> *node_ptr;
 
-    base_ptr parent;
-    base_ptr left;
-    base_ptr right;
-    color_type color;
+    base_ptr parent;  // 父节点
+    base_ptr left;    // 左子节点
+    base_ptr right;   // 右子节点
+    color_type color; // 节点颜色
 
     base_ptr get_base_ptr()
     {
@@ -176,11 +187,13 @@ namespace tinystl
   };
 
   // rb tree 的迭代器设计
+
   template <class T>
   struct rb_tree_iterator_base : public tinystl::iterator<tinystl::bidirectional_iterator_tag, T>
   {
     typedef typename rb_tree_traits<T>::base_ptr base_ptr;
-    base_ptr node;
+
+    base_ptr node; // 指向节点本身
 
     rb_tree_iterator_base() : node(nullptr) {}
 
@@ -192,15 +205,14 @@ namespace tinystl
         node = rb_tree_min(node->right);
       }
       else
-      {
-        // 如果没有右子节点
+      { // 如果没有右子节点
         auto y = node->parent;
         while (y->right == node)
         {
           node = y;
           y = y->parent;
         }
-        if (node->right != y)
+        if (node->right != y) // 应对“寻找根节点的下一节点，而根节点没有右子节点”的特殊情况
           node = y;
       }
     }
@@ -236,6 +248,7 @@ namespace tinystl
   struct rb_tree_iterator : public rb_tree_iterator_base<T>
   {
     typedef rb_tree_traits<T> tree_traits;
+
     typedef typename tree_traits::value_type value_type;
     typedef typename tree_traits::pointer pointer;
     typedef typename tree_traits::reference reference;
@@ -255,7 +268,7 @@ namespace tinystl
     rb_tree_iterator(const iterator &rhs) { node = rhs.node; }
     rb_tree_iterator(const const_iterator &rhs) { node = rhs.node; }
 
-    // reload
+    // 重载操作符
     reference operator*() const { return node->get_node_ptr()->value; }
     pointer operator->() const { return &(operator*()); }
 
@@ -336,6 +349,7 @@ namespace tinystl
   };
 
   // tree algorithm
+
   template <class NodePtr>
   NodePtr rb_tree_min(NodePtr x) noexcept
   {
@@ -1551,7 +1565,7 @@ namespace tinystl
       x->right = base_node;
       if (rightmost() == x)
         rightmost() = base_node;
-    } 
+    }
     rb_tree_insert_rebalance(base_node, root());
     ++node_count_;
     return iterator(node);
@@ -1739,7 +1753,6 @@ namespace tinystl
   {
     lhs.swap(rhs);
   }
-
 } // namespace tinystl
 
 #endif // !TINYSTL_RB_TREE_H_
