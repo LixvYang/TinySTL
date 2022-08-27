@@ -23,6 +23,30 @@ namespace tinystl
     bool operator()(const T &x, const T &y) const { return x < y; }
   };
 
+   // 函数对象：等于
+  template <class T>
+  struct equal_to : public binary_function<T, T, bool>
+  {
+    bool operator()(const T &x, const T &y) const { return x == y; }
+  };
+
+  /*****************************************************************************************/
+  // 哈希函数对象
+
+  // 对于大部分类型，hash function 什么都不做
+  template <class Key>
+  struct hash
+  {
+  };
+
+  template <class T>
+  struct hash<T *>
+  {
+    size_t operator()(T *p) const noexcept
+    {
+      return reinterpret_cast<size_t>(p);
+    }
+  };
 } // namespace tinystl
 
 #endif // !TINYSTL_FUNCTIONAL_H_
