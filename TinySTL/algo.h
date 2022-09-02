@@ -1417,6 +1417,8 @@ namespace tinystl
 
   
 
+
+
 } // namespace tinystl
 
 #endif // !TINYSTL_ALGO_H_
